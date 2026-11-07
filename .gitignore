@@ -1,0 +1,21 @@
+# Java
+target/
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# .NET
+bin/
+obj/
+.vs/
+
+# Node
+node_modules/
+build/
+
+# Secrets and OS
+application-local.properties
+.env
+.DS_Store
