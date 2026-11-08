@@ -33,7 +33,7 @@ app.MapPost("/calculate", (PayrollRequest req) =>
 
 app.Run("http://localhost:5000");
 
-record PayrollRequest(int EmployeeId, string Name, decimal BasicSalary, int WorkingDays, int AbsentDays);
+record PayrollRequest(int EmployeeId, string Name, decimal BasicSalary, int WorkingDays, decimal AbsentDays);
 record PayrollResponse(int EmployeeId, string Name, decimal Basic, decimal Hra, decimal Da,
     decimal Gross, decimal Pf, decimal ProfessionalTax, decimal IncomeTax,
     decimal LossOfPay, decimal TotalDeductions, decimal NetSalary);
