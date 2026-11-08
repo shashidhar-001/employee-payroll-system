@@ -9,12 +9,16 @@ import com.payroll.employee_service.repository.AttendanceRepository;
 import com.payroll.employee_service.repository.EmployeeRepository;
 import com.payroll.employee_service.repository.PayslipRepository;
 import com.payroll.employee_service.security.AuthUser;
+import com.payroll.employee_service.service.LeaveService;
 import com.payroll.employee_service.service.PayrollClient;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -28,17 +32,20 @@ public class PayslipController {
   private final AttendanceRepository attendanceRepo;
   private final PayslipRepository payslipRepo;
   private final PayrollClient payrollClient;
+  private final LeaveService leaveService;
 
   public PayslipController(
     EmployeeRepository employeeRepo,
     AttendanceRepository attendanceRepo,
     PayslipRepository payslipRepo,
-    PayrollClient payrollClient
+    PayrollClient payrollClient,
+    LeaveService leaveService
   ) {
     this.employeeRepo = employeeRepo;
     this.attendanceRepo = attendanceRepo;
     this.payslipRepo = payslipRepo;
     this.payrollClient = payrollClient;
+    this.leaveService = leaveService;
   }
 
   @PostMapping("/generate")
@@ -84,14 +91,24 @@ public class PayslipController {
       ym.atEndOfMonth()
     );
     double present = 0;
+    Set<LocalDate> attended = new HashSet<>();
     for (Attendance a : records) {
+      attended.add(a.getDate());
       switch (a.getStatus()) {
-        case "PRESENT", "LATE", "ON_LEAVE" -> present += 1;
+        case "PRESENT", "LATE" -> present += 1;
         case "HALF_DAY" -> present += 0.5;
         default -> {
         }
       }
     }
+
+    // 2b. Approved leave days where the employee did not actually check in
+    Set<LocalDate> leaveDates = leaveService.approvedLeaveDates(employeeId, ym);
+    leaveDates.removeAll(attended);
+    int leaveDays = leaveDates.size();
+    int paidLeave = Math.min(leaveDays, leaveService.getPaidQuota());
+    int unpaidLeave = leaveDays - paidLeave;
+    present += paidLeave; // unpaid leave stays counted as absent
 
     // 3. Absent days (never below zero, e.g. if someone worked on a Sunday)
     BigDecimal absent = BigDecimal.valueOf(Math.max(0, workingDays - present));
@@ -127,6 +144,8 @@ public class PayslipController {
     p.setTotalDeductions(r.totalDeductions());
     p.setNetSalary(r.netSalary());
     p.setGeneratedAt(LocalDateTime.now());
+    p.setPaidLeaveDays(paidLeave);
+    p.setUnpaidLeaveDays(unpaidLeave);
     return payslipRepo.save(p);
   }
 

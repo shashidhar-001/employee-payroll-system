@@ -1,44 +1,51 @@
 package com.payroll.employee_service.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
-@Table(name = "payslips",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"employee_id", "month", "year"}))
+@Table(
+  name = "payslips",
+  uniqueConstraints = @UniqueConstraint(
+    columnNames = { "employee_id", "month", "year" }
+  )
+)
 @Data
 @NoArgsConstructor
 public class Payslip {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "employee_id", nullable = false)
-    private Employee employee;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(name = "month", nullable = false)
-    private int month;
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "employee_id", nullable = false)
+  private Employee employee;
 
-    @Column(name = "year", nullable = false)
-    private int year;
+  @Column(name = "month", nullable = false)
+  private int month;
 
-    private int workingDays;
-    private BigDecimal absentDays;
+  @Column(name = "year", nullable = false)
+  private int year;
 
-    private BigDecimal basic;
-    private BigDecimal hra;
-    private BigDecimal da;
-    private BigDecimal gross;
-    private BigDecimal pf;
-    private BigDecimal professionalTax;
-    private BigDecimal incomeTax;
-    private BigDecimal lossOfPay;
-    private BigDecimal totalDeductions;
-    private BigDecimal netSalary;
+  private int workingDays;
+  private BigDecimal absentDays;
 
-    private LocalDateTime generatedAt;
+  private BigDecimal basic;
+  private BigDecimal hra;
+  private BigDecimal da;
+  private BigDecimal gross;
+  private BigDecimal pf;
+  private BigDecimal professionalTax;
+  private BigDecimal incomeTax;
+  private BigDecimal lossOfPay;
+  private BigDecimal totalDeductions;
+  private BigDecimal netSalary;
+
+  private LocalDateTime generatedAt;
+
+  private Integer paidLeaveDays;
+  private Integer unpaidLeaveDays;
 }
