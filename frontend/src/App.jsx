@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import EmployeeDashboard from './pages/EmployeeDashboard';
 import HRDashboard from './pages/hr/HRDashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 function Protected({ roles, children }) {
   return (
@@ -30,7 +31,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/employee" element={<Protected roles={['EMPLOYEE']}><EmployeeDashboard /></Protected>} />
             <Route path="/hr" element={<Protected roles={['HR']}><HRDashboard /></Protected>} />
-            <Route path="/admin" element={<Protected roles={['ADMIN']}><Typography variant="h5">Admin dashboard (coming next)</Typography></Protected>} />
+            <Route path="/admin" element={<Protected roles={['ADMIN']}><AdminDashboard /></Protected>} />
             <Route path="*" element={<Home />} />
           </Routes>
         </AuthProvider>

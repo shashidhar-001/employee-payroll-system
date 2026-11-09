@@ -74,6 +74,9 @@ public class SecurityConfig {
           .permitAll() // protected by the service key instead of a JWT
           .requestMatchers("/api/reports/**")
           .hasAnyRole("ADMIN", "HR")
+          .requestMatchers("/api/admin/**").hasRole("ADMIN")
+          .requestMatchers(HttpMethod.PUT, "/api/departments/**").hasRole("ADMIN")
+            .requestMatchers(HttpMethod.DELETE, "/api/departments/**").hasRole("ADMIN")
           .anyRequest()
           .authenticated()
       )
