@@ -28,7 +28,7 @@ export default function Login() {
 
     return (
         <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'grey.100' }}>
-            <Paper component="form" onSubmit={submit} sx={{ p: 4, width: 380 }}>
+            <Paper component="form" onSubmit={submit} sx={{ p: { xs: 3, sm: 4 }, width: '100%', maxWidth: 380, m: 2 }}>
                 <Typography variant="h5" gutterBottom>Employee Payroll System</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>Sign in to continue</Typography>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
