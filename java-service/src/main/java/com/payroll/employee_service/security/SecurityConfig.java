@@ -70,6 +70,10 @@ public class SecurityConfig {
           .hasAnyRole("ADMIN", "HR")
           .requestMatchers("/api/leaves/**")
           .authenticated()
+          .requestMatchers("/internal/**")
+          .permitAll() // protected by the service key instead of a JWT
+          .requestMatchers("/api/reports/**")
+          .hasAnyRole("ADMIN", "HR")
           .anyRequest()
           .authenticated()
       )

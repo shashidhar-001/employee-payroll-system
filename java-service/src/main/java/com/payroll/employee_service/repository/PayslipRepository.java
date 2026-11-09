@@ -12,4 +12,5 @@ public interface PayslipRepository extends JpaRepository<Payslip, Long> {
     int year
   );
   List<Payslip> findByEmployeeIdOrderByYearDescMonthDesc(Long employeeId);
+  List<Payslip> findByMonthAndYear(int month, int year);
 }
