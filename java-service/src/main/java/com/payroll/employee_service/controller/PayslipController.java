@@ -93,10 +93,15 @@ public class PayslipController {
     double present = 0;
     Set<LocalDate> attended = new HashSet<>();
     for (Attendance a : records) {
-      attended.add(a.getDate());
       switch (a.getStatus()) {
-        case "PRESENT", "LATE" -> present += 1;
-        case "HALF_DAY" -> present += 0.5;
+        case "PRESENT", "LATE" -> {
+          present += 1;
+          attended.add(a.getDate());
+        }
+        case "HALF_DAY" -> {
+          present += 0.5;
+          attended.add(a.getDate());
+        }
         default -> {
         }
       }

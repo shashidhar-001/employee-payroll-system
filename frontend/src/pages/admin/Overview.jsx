@@ -3,14 +3,12 @@ import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
 import api, { errorMessage } from '../../api';
 import { Section } from '../../components/common';
 
-function Stat({ label, value }) {
-  return (
-    <Paper variant="outlined" sx={{ p: 1.5 }}>
-      <Typography variant="caption" color="text.secondary">{label}</Typography>
-      <Typography variant="h5">{value ?? '-'}</Typography>
-    </Paper>
-  );
-}
+import { StatCard, StatGrid } from '../../components/common';
+import PeopleIcon from '@mui/icons-material/People';
+import ApartmentIcon from '@mui/icons-material/Apartment';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+
 
 function ServiceRow({ name, info }) {
   const up = info?.status === 'UP';
@@ -66,12 +64,12 @@ export default function Overview({ notify }) {
 
   return (
     <Stack spacing={3}>
-      <Box sx={{ display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' } }}>
-        <Stat label="Active employees" value={stats?.employees} />
-        <Stat label="Departments" value={stats?.departments} />
-        <Stat label="Active login accounts" value={stats?.users} />
-        <Stat label="Pending leave requests" value={stats?.pendingLeaves} />
-      </Box>
+      <StatGrid>
+        <StatCard icon={<PeopleIcon />} color="primary" label="Active employees" value={stats?.employees} />
+        <StatCard icon={<ApartmentIcon />} color="secondary" label="Departments" value={stats?.departments} />
+        <StatCard icon={<ManageAccountsIcon />} color="success" label="Active login accounts" value={stats?.users} />
+        <StatCard icon={<FactCheckIcon />} color="warning" label="Pending leave requests" value={stats?.pendingLeaves} />
+      </StatGrid>
 
       <Section title="Service status" action={<Button size="small" onClick={loadStatus}>Refresh</Button>}>
         <ServiceRow name="Java service (employees)" info={status?.java} />

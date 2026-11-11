@@ -43,6 +43,8 @@ public class SecurityConfig {
       )
       .authorizeHttpRequests(auth ->
         auth
+          .requestMatchers("/error")
+          .permitAll()
           .requestMatchers(HttpMethod.POST, "/api/auth/login")
           .permitAll()
           .requestMatchers("/api/users/**")
@@ -74,9 +76,12 @@ public class SecurityConfig {
           .permitAll() // protected by the service key instead of a JWT
           .requestMatchers("/api/reports/**")
           .hasAnyRole("ADMIN", "HR")
-          .requestMatchers("/api/admin/**").hasRole("ADMIN")
-          .requestMatchers(HttpMethod.PUT, "/api/departments/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/departments/**").hasRole("ADMIN")
+          .requestMatchers("/api/admin/**")
+          .hasRole("ADMIN")
+          .requestMatchers(HttpMethod.PUT, "/api/departments/**")
+          .hasRole("ADMIN")
+          .requestMatchers(HttpMethod.DELETE, "/api/departments/**")
+          .hasRole("ADMIN")
           .anyRequest()
           .authenticated()
       )

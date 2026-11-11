@@ -1,15 +1,20 @@
 package com.payroll.employee_service.controller;
 
+import com.payroll.employee_service.dto.AttendanceCorrectionRequest;
 import com.payroll.employee_service.entity.Attendance;
 import com.payroll.employee_service.entity.Employee;
 import com.payroll.employee_service.repository.AttendanceRepository;
 import com.payroll.employee_service.repository.EmployeeRepository;
 import com.payroll.employee_service.security.AuthUser;
+import jakarta.validation.Valid;
+import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +26,12 @@ public class AttendanceController {
 
   private static final LocalTime LATE_AFTER = LocalTime.of(9, 30);
   private static final long HALF_DAY_MINUTES = 4 * 60;
+  private static final Set<String> CORRECTABLE = Set.of(
+    "PRESENT",
+    "LATE",
+    "HALF_DAY",
+    "ABSENT"
+  );
 
   private final AttendanceRepository attendanceRepo;
   private final EmployeeRepository employeeRepo;
@@ -83,6 +94,12 @@ public class AttendanceController {
         "Already checked out today"
       );
     }
+    if (a.getCheckIn() == null) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "No check-in is recorded for today"
+      );
+    }
 
     LocalTime now = LocalTime.now().withNano(0);
     a.setCheckOut(now);
@@ -119,5 +136,82 @@ public class AttendanceController {
       ym.atDay(1),
       ym.atEndOfMonth()
     );
+  }
+
+  // HR / Admin: add or fix one day's attendance, with a recorded reason
+  @PutMapping("/employee/{employeeId}/correct")
+  public Attendance correct(
+    @AuthenticationPrincipal AuthUser user,
+    @PathVariable Long employeeId,
+    @Valid @RequestBody AttendanceCorrectionRequest req
+  ) {
+    if (employeeId.equals(user.employeeId())) {
+      throw new ResponseStatusException(
+        HttpStatus.FORBIDDEN,
+        "You cannot correct your own attendance"
+      );
+    }
+    Employee emp = employeeRepo
+      .findById(employeeId)
+      .orElseThrow(() ->
+        new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found")
+      );
+
+    String status = req.status().trim().toUpperCase();
+    if (!CORRECTABLE.contains(status)) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "Status must be PRESENT, LATE, HALF_DAY or ABSENT"
+      );
+    }
+    LocalDate date = req.date();
+    if (date.isAfter(LocalDate.now())) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "Cannot correct a future date"
+      );
+    }
+    if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "Sunday is a holiday"
+      );
+    }
+
+    LocalTime inTime = req.checkIn();
+    LocalTime outTime = req.checkOut();
+    if ("ABSENT".equals(status)) {
+      inTime = null;
+      outTime = null;
+    } else {
+      if (inTime == null) {
+        throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Check-in time is required"
+        );
+      }
+      if (outTime != null && !outTime.isAfter(inTime)) {
+        throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST,
+          "Check-out must be after check-in"
+        );
+      }
+    }
+
+    Attendance a = attendanceRepo
+      .findByEmployeeIdAndDate(employeeId, date)
+      .orElseGet(() -> {
+        Attendance n = new Attendance();
+        n.setEmployee(emp);
+        n.setDate(date);
+        return n;
+      });
+    a.setStatus(status);
+    a.setCheckIn(inTime);
+    a.setCheckOut(outTime);
+    a.setCorrectedBy(user.email());
+    a.setCorrectedAt(LocalDateTime.now());
+    a.setCorrectionReason(req.reason().trim());
+    return attendanceRepo.save(a);
   }
 }

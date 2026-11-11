@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import api, { errorMessage } from '../../api';
 import { MONTH_NAMES, PeriodPicker, Section, TableWrap, money } from '../../components/common';
+import { downloadPayslipPdf } from '../../utils/payslipPdf';
 
 function previousMonth() {
   const d = new Date();
@@ -108,7 +109,7 @@ export default function Payroll({ notify }) {
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ alignItems: { md: 'center' } }}>
           <PeriodPicker {...period} onChange={changePeriod} />
           <TextField select size="small" label="Employee" value={employeeId}
-                     onChange={(e) => setEmployeeId(e.target.value)} sx={{ minWidth: 220 }}>
+            onChange={(e) => setEmployeeId(e.target.value)} sx={{ minWidth: 220 }}>
             {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>)}
           </TextField>
           <Button variant="contained" disabled={!employeeId || busy} onClick={generateSingle}>
@@ -125,12 +126,13 @@ export default function Payroll({ notify }) {
 
         {results.length > 0 && (
           <Box sx={{ mt: 2 }}>
-            <TableWrap minWidth={600}>
+            <TableWrap minWidth={680}>
               <TableHead>
                 <TableRow>
                   <TableCell>Employee</TableCell><TableCell>Result</TableCell>
                   <TableCell align="right">Gross</TableCell><TableCell align="right">Deductions</TableCell>
                   <TableCell align="right">Net salary</TableCell>
+                  <TableCell />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -139,11 +141,14 @@ export default function Payroll({ notify }) {
                     <TableCell>{r.name}</TableCell>
                     <TableCell>
                       {r.ok ? <Chip size="small" color="success" label="Generated" />
-                            : <Chip size="small" color="error" label={r.text} />}
+                        : <Chip size="small" color="error" label={r.text} />}
                     </TableCell>
                     <TableCell align="right">{r.ok ? money(r.payslip.gross) : '-'}</TableCell>
                     <TableCell align="right">{r.ok ? money(r.payslip.totalDeductions) : '-'}</TableCell>
                     <TableCell align="right">{r.ok ? money(r.payslip.netSalary) : '-'}</TableCell>
+                    <TableCell align="right">
+                      {r.ok && <Button size="small" onClick={() => downloadPayslipPdf(r.payslip)}>PDF</Button>}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -153,7 +158,7 @@ export default function Payroll({ notify }) {
       </Section>
 
       <Section title={`Payroll summary: ${label}`}
-               action={<Button size="small" onClick={loadSummary}>Load summary</Button>}>
+        action={<Button size="small" onClick={loadSummary}>Load summary</Button>}>
         {!summary && (
           <Typography color="text.secondary">
             Click "Load summary" to see totals for payslips already generated for {label}.
@@ -161,8 +166,10 @@ export default function Payroll({ notify }) {
         )}
         {summary && (
           <>
-            <Box sx={{ display: 'grid', gap: 2, mb: 2,
-                       gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' } }}>
+            <Box sx={{
+              display: 'grid', gap: 2, mb: 2,
+              gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }
+            }}>
               <Stat label="Employees paid" value={summary.employees} />
               <Stat label="Total gross" value={money(summary.totalGross)} />
               <Stat label="Total deductions" value={money(summary.totalDeductions)} />
