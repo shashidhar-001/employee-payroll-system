@@ -18,6 +18,7 @@ export default function Employees({ notify }) {
   const [departments, setDepartments] = useState([]);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [editing, setEditing] = useState(null);    // null = closed, 'new' or an employee
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -38,8 +39,10 @@ export default function Employees({ notify }) {
     const q = search.trim().toLowerCase();
     return employees.filter((e) =>
       (!deptFilter || e.department?.id === Number(deptFilter)) &&
-      (!q || [e.name, e.email, e.designation].some((v) => v && v.toLowerCase().includes(q))));
-  }, [employees, search, deptFilter]);
+      (!statusFilter || (statusFilter === 'active') === e.active) &&
+      (!q || [e.employeeCode, String(e.id), e.name, e.email, e.designation]
+        .some((v) => v && v.toLowerCase().includes(q))));
+  }, [employees, search, deptFilter, statusFilter]);
 
   const setField = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
@@ -75,10 +78,20 @@ export default function Employees({ notify }) {
   };
 
   const deactivate = async (e) => {
-    if (!window.confirm(`Deactivate ${e.name}? They will no longer be able to log in.`)) return;
+    if (!window.confirm(`Deactivate ${e.employeeCode} ${e.name}? They will no longer be able to log in.`)) return;
     try {
       await api.delete(`/api/employees/${e.id}`);
       notify('success', `${e.name} deactivated`);
+      await load();
+    } catch (err) {
+      notify('error', errorMessage(err));
+    }
+  };
+
+  const activate = async (e) => {
+    try {
+      await api.put(`/api/employees/${e.id}/activate`);
+      notify('success', `${e.name} activated`);
       await load();
     } catch (err) {
       notify('error', errorMessage(err));
@@ -93,26 +106,34 @@ export default function Employees({ notify }) {
         </Alert>
       )}
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
-        <TextField size="small" label="Search name, email, designation" value={search}
+      <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ mb: 2 }}>
+        <TextField label="Search by ID, name, email or designation" value={search}
                    onChange={(e) => setSearch(e.target.value)} sx={{ flexGrow: 1 }} />
-        <TextField select size="small" label="Department" value={deptFilter}
+        <TextField select label="Department" value={deptFilter}
                    onChange={(e) => setDeptFilter(e.target.value)} sx={{ minWidth: 180 }}>
           <MenuItem value="">All departments</MenuItem>
           {departments.map((d) => <MenuItem key={d.id} value={d.id}>{d.name}</MenuItem>)}
         </TextField>
+        <TextField select label="Status" value={statusFilter}
+                   onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 140 }}>
+          <MenuItem value="">All</MenuItem>
+          <MenuItem value="active">Active</MenuItem>
+          <MenuItem value="inactive">Inactive</MenuItem>
+        </TextField>
       </Stack>
 
-      <TableWrap minWidth={720}>
+      <TableWrap minWidth={840}>
         <TableHead>
           <TableRow>
-            <TableCell>Name</TableCell><TableCell>Department</TableCell><TableCell>Designation</TableCell>
-            <TableCell align="right">Basic salary</TableCell><TableCell>Status</TableCell><TableCell />
+            <TableCell>ID</TableCell><TableCell>Name</TableCell><TableCell>Department</TableCell>
+            <TableCell>Designation</TableCell><TableCell align="right">Basic salary</TableCell>
+            <TableCell>Status</TableCell><TableCell />
           </TableRow>
         </TableHead>
         <TableBody>
           {visible.map((e) => (
-            <TableRow key={e.id}>
+            <TableRow key={e.id} hover sx={e.active ? undefined : { opacity: 0.65 }}>
+              <TableCell sx={{ whiteSpace: 'nowrap', fontWeight: 600 }}>{e.employeeCode}</TableCell>
               <TableCell>
                 {e.name}
                 <Typography variant="caption" display="block" color="text.secondary">{e.email}</Typography>
@@ -124,22 +145,28 @@ export default function Employees({ notify }) {
                 <Chip size="small" label={e.active ? 'Active' : 'Inactive'} color={e.active ? 'success' : 'default'} />
               </TableCell>
               <TableCell>
-                {e.active && (
-                  <Stack direction="row" spacing={1}>
-                    <Button size="small" onClick={() => openEdit(e)}>Edit</Button>
-                    <Button size="small" color="error" onClick={() => deactivate(e)}>Deactivate</Button>
-                  </Stack>
-                )}
+                <Stack direction="row" spacing={1}>
+                  {e.active ? (
+                    <>
+                      <Button size="small" onClick={() => openEdit(e)}>Edit</Button>
+                      <Button size="small" color="error" onClick={() => deactivate(e)}>Deactivate</Button>
+                    </>
+                  ) : (
+                    <Button size="small" variant="outlined" onClick={() => activate(e)}>Activate</Button>
+                  )}
+                </Stack>
               </TableCell>
             </TableRow>
           ))}
-          {visible.length === 0 && <TableRow><TableCell colSpan={6}>No employees found</TableCell></TableRow>}
+          {visible.length === 0 && <TableRow><TableCell colSpan={7}>No employees found</TableCell></TableRow>}
         </TableBody>
       </TableWrap>
 
       <Dialog open={!!editing} onClose={() => setEditing(null)} fullWidth maxWidth="sm" fullScreen={fullScreen}>
         <form onSubmit={save} style={{ display: 'contents' }}>
-          <DialogTitle>{editing === 'new' ? 'Add employee' : 'Edit employee'}</DialogTitle>
+          <DialogTitle>
+            {editing === 'new' ? 'Add employee' : `Edit employee ${editing?.employeeCode ?? ''}`}
+          </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <TextField label="Name" required value={form.name} onChange={setField('name')} />
@@ -155,11 +182,13 @@ export default function Employees({ notify }) {
               <TextField label="Basic salary" type="number" required value={form.basicSalary}
                          onChange={setField('basicSalary')} slotProps={{ htmlInput: { min: 1, step: '0.01' } }} />
               <Typography variant="caption" color="text.secondary">
-                Login accounts for employees are created by the Admin.
+                {editing === 'new'
+                  ? 'An employee ID such as EMP0007 is assigned automatically. The Admin creates the login account afterwards.'
+                  : 'The employee ID cannot be changed.'}
               </Typography>
             </Stack>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={{ p: 2 }}>
             <Button onClick={() => setEditing(null)}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
           </DialogActions>

@@ -32,7 +32,7 @@ export function downloadPayslipPdf(p) {
     startY: 112, theme: 'plain', styles: { fontSize: 10, cellPadding: 4 },
     columnStyles: { 0: { cellWidth: 85 }, 2: { cellWidth: 90 } },
     body: [
-      [bold('Employee'), e.name || '-', bold('Employee ID'), e.id ?? '-'],
+      [bold('Employee'), e.name || '-', bold('Employee ID'), e.employeeCode ?? e.id ?? '-'],
       [bold('Department'), e.department?.name || '-', bold('Designation'), e.designation || '-'],
       [bold('Email'), e.email || '-', bold('Generated on'),
         p.generatedAt ? new Date(p.generatedAt).toLocaleDateString('en-IN') : '-'],

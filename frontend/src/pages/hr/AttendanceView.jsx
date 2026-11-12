@@ -108,7 +108,7 @@ export default function AttendanceView({ notify }) {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
         <TextField select label="Employee" value={employeeId} sx={{ minWidth: 240 }}
           onChange={(e) => setEmployeeId(e.target.value)}>
-          {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>)}
+          {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.employeeCode} · {e.name}</MenuItem>)}
         </TextField>
         <PeriodPicker {...period} onChange={setPeriod} />
       </Stack>

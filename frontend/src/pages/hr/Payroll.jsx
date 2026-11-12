@@ -110,7 +110,7 @@ export default function Payroll({ notify }) {
           <PeriodPicker {...period} onChange={changePeriod} />
           <TextField select size="small" label="Employee" value={employeeId}
             onChange={(e) => setEmployeeId(e.target.value)} sx={{ minWidth: 220 }}>
-            {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>)}
+            {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.employeeCode} · {e.name}</MenuItem>)}
           </TextField>
           <Button variant="contained" disabled={!employeeId || busy} onClick={generateSingle}>
             Generate for employee

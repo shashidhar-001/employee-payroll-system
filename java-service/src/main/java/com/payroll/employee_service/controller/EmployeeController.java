@@ -71,6 +71,13 @@ public class EmployeeController {
     return employeeRepo.save(e);
   }
 
+  @PutMapping("/{id}/activate")
+  public Employee activate(@PathVariable Long id) {
+    Employee e = getOne(id);
+    e.setActive(true);
+    return employeeRepo.save(e);
+  }
+
   private void apply(Employee e, EmployeeRequest req) {
     employeeRepo
       .findByEmail(req.getEmail())
