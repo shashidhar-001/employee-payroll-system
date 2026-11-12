@@ -19,6 +19,9 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../AuthContext';
 import { NotifyProvider } from './Notify';
+import TuneIcon from '@mui/icons-material/Tune';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import ChangePasswordDialog from './ChangePasswordDialog';
 
 const NAV = {
   EMPLOYEE: [
@@ -38,13 +41,14 @@ const NAV = {
     { label: 'Overview', to: '/admin', icon: <DashboardIcon /> },
     { label: 'Users', to: '/admin/users', icon: <ManageAccountsIcon /> },
     { label: 'Departments', to: '/admin/departments', icon: <ApartmentIcon /> },
+    { label: 'Payroll rules', to: '/admin/rules', icon: <TuneIcon /> },
     { label: 'Payroll', to: '/admin/payroll', icon: <PaymentsIcon /> },
   ],
 };
 
 const DRAWER = 250;
 
-function Sidebar({ items, pathname, user, logout, onNavigate }) {
+function Sidebar({ items, pathname, user, logout, onNavigate, onChangePassword }) {
   return (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#fff' }}>
       <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -63,15 +67,15 @@ function Sidebar({ items, pathname, user, logout, onNavigate }) {
       <List sx={{ px: 1.5, flexGrow: 1 }}>
         {items.map((it) => (
           <ListItemButton key={it.to} component={RouterLink} to={it.to} onClick={onNavigate}
-                          selected={pathname === it.to}
-                          sx={{
-                            borderRadius: 2, mb: 0.5, color: 'text.secondary',
-                            '& .MuiListItemIcon-root': { minWidth: 38, color: 'inherit' },
-                            '&.Mui-selected': {
-                              bgcolor: 'primary.main', color: '#fff',
-                              '&:hover': { bgcolor: 'primary.dark' },
-                            },
-                          }}>
+            selected={pathname === it.to}
+            sx={{
+              borderRadius: 2, mb: 0.5, color: 'text.secondary',
+              '& .MuiListItemIcon-root': { minWidth: 38, color: 'inherit' },
+              '&.Mui-selected': {
+                bgcolor: 'primary.main', color: '#fff',
+                '&:hover': { bgcolor: 'primary.dark' },
+              },
+            }}>
             <ListItemIcon>{it.icon}</ListItemIcon>
             <ListItemText primary={it.label} slotProps={{ primary: { fontWeight: 600, fontSize: 14 } }} />
           </ListItemButton>
@@ -88,8 +92,12 @@ function Sidebar({ items, pathname, user, logout, onNavigate }) {
             <Chip size="small" label={user.role} sx={{ height: 20, fontSize: 11 }} />
           </Box>
         </Box>
+        <Button fullWidth variant="text" startIcon={<LockResetIcon />} onClick={onChangePassword}
+          sx={{ color: 'text.secondary', mb: 1, justifyContent: 'flex-start' }}>
+          Change password
+        </Button>
         <Button fullWidth variant="outlined" color="inherit" startIcon={<LogoutIcon />} onClick={logout}
-                sx={{ color: 'text.secondary', borderColor: '#e5e9f2' }}>
+          sx={{ color: 'text.secondary', borderColor: '#e5e9f2' }}>
           Logout
         </Button>
       </Box>
@@ -105,29 +113,35 @@ export default function Layout({ children }) {
   const { pathname } = useLocation();
 
   const items = NAV[user.role] || [];
+  const [pwOpen, setPwOpen] = useState(false);
   const current = items.find((i) => i.to === pathname)?.label || 'Dashboard';
   const side = <Sidebar items={items} pathname={pathname} user={user} logout={logout}
-                        onNavigate={() => setOpen(false)} />;
+    onNavigate={() => setOpen(false)}
+    onChangePassword={() => { setOpen(false); setPwOpen(true); }} />;
 
   return (
     <NotifyProvider>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {desktop ? (
-          <Drawer variant="permanent" sx={{ width: DRAWER, flexShrink: 0,
-            '& .MuiDrawer-paper': { width: DRAWER, border: 0, borderRight: '1px solid #e5e9f2' } }}>
+          <Drawer variant="permanent" sx={{
+            width: DRAWER, flexShrink: 0,
+            '& .MuiDrawer-paper': { width: DRAWER, border: 0, borderRight: '1px solid #e5e9f2' }
+          }}>
             {side}
           </Drawer>
         ) : (
           <Drawer variant="temporary" open={open} onClose={() => setOpen(false)} ModalProps={{ keepMounted: true }}
-                  sx={{ '& .MuiDrawer-paper': { width: DRAWER, border: 0 } }}>
+            sx={{ '& .MuiDrawer-paper': { width: DRAWER, border: 0 } }}>
             {side}
           </Drawer>
         )}
 
         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
           <AppBar position="sticky" color="inherit"
-                  sx={{ bgcolor: 'rgba(244,246,251,0.85)', backdropFilter: 'blur(8px)', border: 0,
-                        borderBottom: '1px solid #e5e9f2' }}>
+            sx={{
+              bgcolor: 'rgba(244,246,251,0.85)', backdropFilter: 'blur(8px)', border: 0,
+              borderBottom: '1px solid #e5e9f2'
+            }}>
             <Toolbar>
               {!desktop && (
                 <IconButton edge="start" onClick={() => setOpen(true)} sx={{ mr: 1 }} aria-label="Open menu">
@@ -142,6 +156,7 @@ export default function Layout({ children }) {
           </AppBar>
           <Box component="main" sx={{ p: { xs: 1.5, sm: 3 }, maxWidth: 1240, mx: 'auto' }}>{children}</Box>
         </Box>
+        <ChangePasswordDialog open={pwOpen} onClose={() => setPwOpen(false)} />
       </Box>
     </NotifyProvider>
   );

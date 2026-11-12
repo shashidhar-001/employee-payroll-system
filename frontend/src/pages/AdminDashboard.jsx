@@ -4,8 +4,9 @@ import Overview from './admin/Overview';
 import Users from './admin/Users';
 import Departments from './admin/Departments';
 import Payroll from './hr/Payroll';
+import PayrollRules from './admin/PayrollRules';
 
-const SECTIONS = { users: Users, departments: Departments, payroll: Payroll };
+const SECTIONS = { users: Users, departments: Departments, payroll: Payroll, rules: PayrollRules };
 
 export default function AdminDashboard() {
   const { section } = useParams();

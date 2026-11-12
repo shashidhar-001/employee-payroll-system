@@ -4,11 +4,13 @@ builder.Services.AddHttpClient("java", c =>
     c.BaseAddress = new Uri(builder.Configuration["JavaService:BaseUrl"]!);
     c.Timeout = TimeSpan.FromSeconds(10);
 });
+builder.Services.AddSingleton(new RuleStore(
+    Path.Combine(builder.Environment.ContentRootPath, "payroll-rules.json")));
 var app = builder.Build();
 
 app.MapGet("/health", () => Results.Ok(new { status = "UP" }));
 
-app.MapPost("/calculate", (PayrollRequest req) =>
+app.MapPost("/calculate", (PayrollRequest req, RuleStore store) =>
 {
     if (req.BasicSalary <= 0)
         return Results.BadRequest(new { error = "Basic salary must be positive" });
@@ -17,14 +19,16 @@ app.MapPost("/calculate", (PayrollRequest req) =>
     if (req.AbsentDays < 0 || req.AbsentDays > req.WorkingDays)
         return Results.BadRequest(new { error = "Absent days must be between 0 and working days" });
 
+    var rules = store.Get();
+
     decimal basic = req.BasicSalary;
-    decimal hra = basic * 0.40m;
-    decimal da = basic * 0.10m;
+    decimal hra = basic * rules.HraPercent / 100m;
+    decimal da = basic * rules.DaPercent / 100m;
     decimal gross = basic + hra + da;
 
-    decimal pf = basic * 0.12m;
-    decimal professionalTax = gross > 15000 ? 200m : 0m;
-    decimal incomeTax = gross <= 25000 ? 0m : gross <= 50000 ? gross * 0.05m : gross * 0.10m;
+    decimal pf = basic * rules.PfPercent / 100m;
+    decimal professionalTax = gross > rules.ProfessionalTaxThreshold ? rules.ProfessionalTaxAmount : 0m;
+    decimal incomeTax = gross * rules.RateFor(gross) / 100m;
     decimal lossOfPay = gross / req.WorkingDays * req.AbsentDays;
 
     decimal totalDeductions = pf + professionalTax + incomeTax + lossOfPay;
@@ -76,6 +80,26 @@ app.MapGet("/payroll/summary", async (int month, int year, IHttpClientFactory fa
         Math.Round(items.Sum(i => i.TotalDeductions), 2),
         Math.Round(items.Sum(i => i.NetSalary), 2),
         departments));
+});
+
+app.MapGet("/rules", (RuleStore store) => Results.Ok(store.Get()));
+
+app.MapPut("/rules", (PayrollRules body, HttpRequest http, RuleStore store, IConfiguration config) =>
+{
+    var expected = config["PayrollService:ApiKey"];
+    var provided = http.Headers["X-Service-Key"].ToString();
+    if (string.IsNullOrEmpty(expected) || !KeyCheck.Matches(provided, expected))
+        return Results.Json(new { error = "Invalid or missing service key" }, statusCode: 401);
+
+    var errors = PayrollRules.Validate(body);
+    if (errors.Count > 0)
+        return Results.BadRequest(new { error = string.Join("; ", errors) });
+
+    var by = http.Headers["X-Updated-By"].ToString();
+    if (string.IsNullOrWhiteSpace(by)) by = "unknown";
+    if (by.Length > 100) by = by[..100];
+
+    return Results.Ok(store.Update(body, by));
 });
 
 app.Run("http://localhost:5000");
