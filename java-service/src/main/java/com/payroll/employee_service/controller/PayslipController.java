@@ -9,6 +9,7 @@ import com.payroll.employee_service.repository.AttendanceRepository;
 import com.payroll.employee_service.repository.EmployeeRepository;
 import com.payroll.employee_service.repository.PayslipRepository;
 import com.payroll.employee_service.security.AuthUser;
+import com.payroll.employee_service.service.HolidayService;
 import com.payroll.employee_service.service.LeaveService;
 import com.payroll.employee_service.service.PayrollClient;
 import java.math.BigDecimal;
@@ -33,19 +34,22 @@ public class PayslipController {
   private final PayslipRepository payslipRepo;
   private final PayrollClient payrollClient;
   private final LeaveService leaveService;
+  private final HolidayService holidayService;
 
   public PayslipController(
     EmployeeRepository employeeRepo,
     AttendanceRepository attendanceRepo,
     PayslipRepository payslipRepo,
     PayrollClient payrollClient,
-    LeaveService leaveService
+    LeaveService leaveService,
+    HolidayService holidayService
   ) {
     this.employeeRepo = employeeRepo;
     this.attendanceRepo = attendanceRepo;
     this.payslipRepo = payslipRepo;
     this.payrollClient = payrollClient;
     this.leaveService = leaveService;
+    this.holidayService = holidayService;
   }
 
   @PostMapping("/generate")
@@ -76,10 +80,14 @@ public class PayslipController {
       );
     }
 
-    // 1. Working days = all days in the month except Sundays
+    LocalDate first = ym.atDay(1);
+    LocalDate last = ym.atEndOfMonth();
+    Set<LocalDate> declared = holidayService.declaredBetween(first, last);
+
+    // 1. Working days = every day except Sundays and declared holidays
     int workingDays = 0;
-    for (int d = 1; d <= ym.lengthOfMonth(); d++) {
-      if (ym.atDay(d).getDayOfWeek() != DayOfWeek.SUNDAY) {
+    for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
+      if (!HolidayService.isOff(d, declared)) {
         workingDays++;
       }
     }
@@ -93,6 +101,7 @@ public class PayslipController {
     double present = 0;
     Set<LocalDate> attended = new HashSet<>();
     for (Attendance a : records) {
+      if (HolidayService.isOff(a.getDate(), declared)) continue; // work on a day off is not counted
       switch (a.getStatus()) {
         case "PRESENT", "LATE" -> {
           present += 1;

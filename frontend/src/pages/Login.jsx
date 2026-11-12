@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Alert, Box, Button, IconButton, InputAdornment, Stack, TextField, Typography } from '@mui/material';
 import Visibility from '@mui/icons-material/Visibility';
@@ -22,6 +22,8 @@ export default function Login() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [notice] = useState(() => sessionStorage.getItem('loginNotice'));
+  useEffect(() => { sessionStorage.removeItem('loginNotice'); }, []);
 
   if (user) return <Navigate to={homePath(user.role)} replace />;
 
@@ -44,8 +46,10 @@ export default function Login() {
         flex: 1, display: { xs: 'none', md: 'flex' }, flexDirection: 'column', justifyContent: 'center',
         p: 8, color: '#fff', background: 'linear-gradient(135deg, #3730a3 0%, #4f46e5 50%, #0ea5a4 100%)',
       }}>
-        <Box sx={{ width: 56, height: 56, borderRadius: 3, display: 'grid', placeItems: 'center',
-                   bgcolor: 'rgba(255,255,255,0.18)', mb: 3 }}>
+        <Box sx={{
+          width: 56, height: 56, borderRadius: 3, display: 'grid', placeItems: 'center',
+          bgcolor: 'rgba(255,255,255,0.18)', mb: 3
+        }}>
           <PaymentsIcon fontSize="large" />
         </Box>
         <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>Employee Payroll System</Typography>
@@ -66,17 +70,22 @@ export default function Login() {
         <Box component="form" onSubmit={submit} sx={{ width: '100%', maxWidth: 400 }}>
           <Typography variant="h4" gutterBottom>Welcome back</Typography>
           <Typography color="text.secondary" sx={{ mb: 3 }}>Sign in to your account to continue</Typography>
+          {notice && !error && <Alert severity="info" sx={{ mb: 2 }}>{notice}</Alert>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <TextField label="Email" type="email" fullWidth required margin="normal" autoFocus
-                     value={email} onChange={(e) => setEmail(e.target.value)} />
+            value={email} onChange={(e) => setEmail(e.target.value)} />
           <TextField label="Password" type={show ? 'text' : 'password'} fullWidth required margin="normal"
-                     value={password} onChange={(e) => setPassword(e.target.value)}
-                     slotProps={{ input: { endAdornment: (
-                       <InputAdornment position="end">
-                         <IconButton onClick={() => setShow(!show)} edge="end" aria-label="Show password">
-                           {show ? <VisibilityOff /> : <Visibility />}
-                         </IconButton>
-                       </InputAdornment>) } }} />
+            value={password} onChange={(e) => setPassword(e.target.value)}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShow(!show)} edge="end" aria-label="Show password">
+                      {show ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>)
+              }
+            }} />
           <Button type="submit" variant="contained" fullWidth size="large" disabled={busy} sx={{ mt: 2, py: 1.3 }}>
             {busy ? 'Signing in...' : 'Sign in'}
           </Button>

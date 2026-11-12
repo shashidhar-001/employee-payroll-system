@@ -22,6 +22,7 @@ import { NotifyProvider } from './Notify';
 import TuneIcon from '@mui/icons-material/Tune';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ChangePasswordDialog from './ChangePasswordDialog';
+import CelebrationIcon from '@mui/icons-material/Celebration';
 
 const NAV = {
   EMPLOYEE: [
@@ -29,6 +30,7 @@ const NAV = {
     { label: 'Attendance', to: '/employee/attendance', icon: <EventAvailableIcon /> },
     { label: 'Leave', to: '/employee/leave', icon: <BeachAccessIcon /> },
     { label: 'Payslips', to: '/employee/payslips', icon: <ReceiptLongIcon /> },
+    { label: 'Holidays', to: '/employee/holidays', icon: <CelebrationIcon /> },
   ],
   HR: [
     { label: 'Overview', to: '/hr', icon: <DashboardIcon /> },
@@ -36,6 +38,7 @@ const NAV = {
     { label: 'Employees', to: '/hr/employees', icon: <PeopleIcon /> },
     { label: 'Attendance', to: '/hr/attendance', icon: <AccessTimeIcon /> },
     { label: 'Payroll', to: '/hr/payroll', icon: <PaymentsIcon /> },
+    { label: 'Holidays', to: '/hr/holidays', icon: <CelebrationIcon /> },
   ],
   ADMIN: [
     { label: 'Overview', to: '/admin', icon: <DashboardIcon /> },
@@ -43,6 +46,7 @@ const NAV = {
     { label: 'Departments', to: '/admin/departments', icon: <ApartmentIcon /> },
     { label: 'Payroll rules', to: '/admin/rules', icon: <TuneIcon /> },
     { label: 'Payroll', to: '/admin/payroll', icon: <PaymentsIcon /> },
+    { label: 'Holidays', to: '/admin/holidays', icon: <CelebrationIcon /> },
   ],
 };
 

@@ -12,6 +12,8 @@ import LeaveApprovals from './hr/LeaveApprovals';
 import Employees from './hr/Employees';
 import AttendanceView from './hr/AttendanceView';
 import Payroll from './hr/Payroll';
+import PayrollCharts from '../components/PayrollCharts';
+import Holidays from './Holidays';
 
 function Overview() {
   const [stats, setStats] = useState({});
@@ -42,11 +44,12 @@ function Overview() {
           <Button variant="outlined" component={RouterLink} to="/hr/payroll">Run payroll</Button>
         </Stack>
       </Section>
+      <PayrollCharts />
     </Stack>
   );
 }
 
-const SECTIONS = { leaves: LeaveApprovals, employees: Employees, attendance: AttendanceView, payroll: Payroll };
+const SECTIONS = { leaves: LeaveApprovals, employees: Employees, attendance: AttendanceView, payroll: Payroll , holidays: Holidays };
 
 export default function HRDashboard() {
   const { section } = useParams();

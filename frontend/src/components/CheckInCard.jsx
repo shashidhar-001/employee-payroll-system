@@ -12,6 +12,7 @@ export default function CheckInCard({ name, onChange }) {
   const notify = useNotify();
   const [record, setRecord] = useState(null);
   const [now, setNow] = useState(new Date());
+  const [holiday, setHoliday] = useState(null);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -29,6 +30,14 @@ export default function CheckInCard({ name, onChange }) {
   }, [notify]);
 
   useEffect(() => { load(); }, [load]);
+  
+  useEffect(() => {
+    const d = new Date();
+    if (d.getDay() === 0) { setHoliday('Sunday'); return; }
+    api.get('/api/holidays', { params: { year: d.getFullYear() } })
+      .then(({ data }) => setHoliday(data.find((h) => h.date === d.toLocaleDateString('en-CA'))?.name || null))
+      .catch(() => { });
+  }, []);
 
   const act = async (path, okText) => {
     try {
@@ -49,7 +58,7 @@ export default function CheckInCard({ name, onChange }) {
       background: 'linear-gradient(120deg, #4f46e5 0%, #6d5df6 55%, #0ea5a4 100%)',
     }}>
       <Stack direction={{ xs: 'column', md: 'row' }}
-             sx={{ justifyContent: 'space-between', alignItems: { md: 'center' }, gap: 2 }}>
+        sx={{ justifyContent: 'space-between', alignItems: { md: 'center' }, gap: 2 }}>
         <Box>
           <Typography variant="h5" sx={{ color: '#fff' }}>
             {greeting(now.getHours())}{name ? `, ${name.split(' ')[0]}` : ''}
@@ -67,17 +76,17 @@ export default function CheckInCard({ name, onChange }) {
               </>
             ) : (
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {now.getDay() === 0 ? 'Today is a holiday' : 'You have not checked in today'}
+                {holiday ? `Today is a holiday: ${holiday}` : 'You have not checked in today'}
               </Typography>
             )}
           </Stack>
         </Box>
         <Stack direction="row" spacing={1.5}>
-          <Button variant="contained" startIcon={<LoginIcon />} sx={btn} disabled={!!record}
-                  onClick={() => act('/api/attendance/check-in', 'Checked in')}>Check In</Button>
+          <Button variant="contained" startIcon={<LoginIcon />} sx={btn} disabled={!!record || !!holiday}
+            onClick={() => act('/api/attendance/check-in', 'Checked in')}>Check In</Button>
           <Button variant="contained" startIcon={<LogoutIcon />} sx={btn}
-                  disabled={!record || !!record.checkOut || !record.checkIn}
-                  onClick={() => act('/api/attendance/check-out', 'Checked out')}>Check Out</Button>
+            disabled={!record || !!record.checkOut || !record.checkIn}
+            onClick={() => act('/api/attendance/check-out', 'Checked out')}>Check Out</Button>
         </Stack>
       </Stack>
     </Box>

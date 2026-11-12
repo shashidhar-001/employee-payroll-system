@@ -1,5 +1,6 @@
 package com.payroll.employee_service.security;
 
+import com.payroll.employee_service.repository.UserRepository;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +29,8 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(
     HttpSecurity http,
-    JwtService jwtService
+    JwtService jwtService,
+    UserRepository userRepo
   ) throws Exception {
     http
       .csrf(csrf -> csrf.disable())
@@ -84,11 +86,15 @@ public class SecurityConfig {
           .hasRole("ADMIN")
           .requestMatchers("/api/payroll/rules")
           .hasRole("ADMIN")
+          .requestMatchers(HttpMethod.POST, "/api/holidays")
+          .hasAnyRole("ADMIN", "HR")
+          .requestMatchers(HttpMethod.DELETE, "/api/holidays/**")
+          .hasAnyRole("ADMIN", "HR")
           .anyRequest()
           .authenticated()
       )
       .addFilterBefore(
-        new JwtAuthFilter(jwtService),
+        new JwtAuthFilter(jwtService, userRepo),
         UsernamePasswordAuthenticationFilter.class
       );
     return http.build();

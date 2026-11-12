@@ -12,6 +12,7 @@ import CheckInCard from '../components/CheckInCard';
 import PayslipDialog from '../components/PayslipDialog';
 import { downloadPayslipPdf } from '../utils/payslipPdf';
 import { MONTH_NAMES, PeriodPicker, Section, StatCard, StatGrid, StatusChip, TableWrap, money } from '../components/common';
+import Holidays from './Holidays';
 
 const emptyForm = { leaveType: 'CASUAL', fromDate: '', toDate: '', reason: '' };
 const empty = (cols, text) => <TableRow><TableCell colSpan={cols} sx={{ color: 'text.secondary', py: 3 }}>{text}</TableCell></TableRow>;
@@ -79,7 +80,7 @@ export default function EmployeeDashboard() {
           <StatCard icon={<PaymentsIcon />} color="secondary" label="Latest net salary" value={latest ? money(latest.netSalary) : '-'} />
         </StatGrid>
         <Section title="Latest payslip"
-                 action={<Button size="small" component={RouterLink} to="/employee/payslips">All payslips</Button>}>
+          action={<Button size="small" component={RouterLink} to="/employee/payslips">All payslips</Button>}>
           {latest ? (
             <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 2 }}>
               <Box>
@@ -121,17 +122,17 @@ export default function EmployeeDashboard() {
               <MenuItem value="SICK">Sick</MenuItem>
             </TextField>
             <TextField label="From" type="date" value={form.fromDate} onChange={setField('fromDate')}
-                       slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: today } }} />
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: today } }} />
             <TextField label="To" type="date" value={form.toDate} onChange={setField('toDate')}
-                       slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fromDate || today } }} />
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: form.fromDate || today } }} />
             <TextField label="Reason" value={form.reason} onChange={setField('reason')} sx={{ flexGrow: 1 }} />
             <Button variant="contained" disabled={!form.fromDate || !form.toDate || !form.reason.trim()}
-                    onClick={() => run(async () => { await api.post('/api/leaves', form); setForm(emptyForm); }, 'Leave request submitted')}>
+              onClick={() => run(async () => { await api.post('/api/leaves', form); setForm(emptyForm); }, 'Leave request submitted')}>
               Submit
             </Button>
           </Stack>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.5 }}>
-            Sundays are holidays and are not counted. A request must stay within one month.
+            Sundays and declared holidays and are not counted. A request must stay within one month.
             Approved days beyond the monthly paid quota are unpaid.
           </Typography>
         </Section>
@@ -154,7 +155,7 @@ export default function EmployeeDashboard() {
                   <TableCell>
                     {l.status === 'PENDING' && (
                       <Button size="small" color="error"
-                              onClick={() => run(() => api.put(`/api/leaves/${l.id}/cancel`), 'Request cancelled')}>Cancel</Button>
+                        onClick={() => run(() => api.put(`/api/leaves/${l.id}/cancel`), 'Request cancelled')}>Cancel</Button>
                     )}
                   </TableCell>
                 </TableRow>
@@ -198,6 +199,7 @@ export default function EmployeeDashboard() {
       </Section>
     );
   }
+  if (section === 'holidays') return <Holidays notify={notify} />;
 
   return <Navigate to="/employee" replace />;
 }

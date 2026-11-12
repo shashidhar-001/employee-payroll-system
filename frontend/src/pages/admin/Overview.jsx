@@ -9,6 +9,8 @@ import ApartmentIcon from '@mui/icons-material/Apartment';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 
+import PayrollCharts from '../../components/PayrollCharts';
+
 
 function ServiceRow({ name, info }) {
   const up = info?.status === 'UP';
@@ -70,6 +72,8 @@ export default function Overview({ notify }) {
         <StatCard icon={<ManageAccountsIcon />} color="success" label="Active login accounts" value={stats?.users} />
         <StatCard icon={<FactCheckIcon />} color="warning" label="Pending leave requests" value={stats?.pendingLeaves} />
       </StatGrid>
+
+      <PayrollCharts />
 
       <Section title="Service status" action={<Button size="small" onClick={loadStatus}>Refresh</Button>}>
         <ServiceRow name="Java service (employees)" info={status?.java} />

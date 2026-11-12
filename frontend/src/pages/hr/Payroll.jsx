@@ -120,7 +120,7 @@ export default function Payroll({ notify }) {
           </Button>
         </Stack>
         <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-          Working days are Monday to Saturday. Missing attendance counts as absent; approved leave counts
+          Working days are Monday to Saturday, excluding declared holidays. Missing attendance counts as absent; approved leave counts
           as paid for up to 2 days per month. The salary calculation is done by the .NET payroll service.
         </Typography>
 

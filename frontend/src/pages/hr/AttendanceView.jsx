@@ -12,7 +12,7 @@ const hhmm = (t) => (t ? t.slice(0, 5) : '');
 const pad = (n) => String(n).padStart(2, '0');
 
 // One row per working day up to today. Days with no record are shown as absent.
-function buildRows(records, { month, year }) {
+function buildRows(records, { month, year }, holidays) {
   const todayStr = new Date().toLocaleDateString('en-CA');
   const byDate = new Map(records.map((r) => [r.date, r]));
   const last = new Date(year, month, 0).getDate();
@@ -21,7 +21,7 @@ function buildRows(records, { month, year }) {
     const date = `${year}-${pad(month)}-${pad(d)}`;
     if (date > todayStr) break;
     const isSunday = new Date(year, month - 1, d).getDay() === 0;
-    if (isSunday && !byDate.has(date)) continue;
+    if ((isSunday || holidays.has(date)) && !byDate.has(date)) continue;
     rows.push(byDate.get(date) || { id: `missing-${date}`, date, status: 'ABSENT', missing: true });
   }
   return rows.reverse();
@@ -37,6 +37,14 @@ export default function AttendanceView({ notify }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ status: 'PRESENT', checkIn: '', checkOut: '', reason: '' });
   const [saving, setSaving] = useState(false);
+
+  const [holidays, setHolidays] = useState(new Set());
+
+  useEffect(() => {
+    api.get('/api/holidays', { params: { year: period.year } })
+      .then(({ data }) => setHolidays(new Set(data.map((h) => h.date))))
+      .catch(() => setHolidays(new Set()));
+  }, [period.year]);
 
   useEffect(() => {
     api.get('/api/employees')
@@ -56,7 +64,8 @@ export default function AttendanceView({ notify }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const rows = useMemo(() => (employeeId ? buildRows(records, period) : []), [records, period, employeeId]);
+  const rows = useMemo(() => (employeeId ? buildRows(records, period, holidays) : []),
+    [records, period, employeeId, holidays]);
   const count = (fn) => rows.filter(fn).length;
 
   const openEdit = (row) => {
@@ -98,7 +107,7 @@ export default function AttendanceView({ notify }) {
     <Section title="Employee attendance">
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
         <TextField select label="Employee" value={employeeId} sx={{ minWidth: 240 }}
-                   onChange={(e) => setEmployeeId(e.target.value)}>
+          onChange={(e) => setEmployeeId(e.target.value)}>
           {employees.map((e) => <MenuItem key={e.id} value={e.id}>{e.name}</MenuItem>)}
         </TextField>
         <PeriodPicker {...period} onChange={setPeriod} />
@@ -156,13 +165,13 @@ export default function AttendanceView({ notify }) {
               {!absent && (
                 <>
                   <TextField label="Check in" type="time" required value={form.checkIn} onChange={setField('checkIn')}
-                             slotProps={{ inputLabel: { shrink: true } }} />
+                    slotProps={{ inputLabel: { shrink: true } }} />
                   <TextField label="Check out (optional)" type="time" value={form.checkOut} onChange={setField('checkOut')}
-                             slotProps={{ inputLabel: { shrink: true } }} />
+                    slotProps={{ inputLabel: { shrink: true } }} />
                 </>
               )}
               <TextField label="Reason for correction" required multiline minRows={2} value={form.reason}
-                         onChange={setField('reason')} slotProps={{ htmlInput: { maxLength: 255 } }} />
+                onChange={setField('reason')} slotProps={{ htmlInput: { maxLength: 255 } }} />
               <Alert severity="info">The employee will see that this day was corrected, with your reason.</Alert>
             </Stack>
           </DialogContent>

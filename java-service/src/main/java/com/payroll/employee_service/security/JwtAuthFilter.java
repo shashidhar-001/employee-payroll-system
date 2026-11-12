@@ -1,5 +1,7 @@
 package com.payroll.employee_service.security;
 
+import com.payroll.employee_service.entity.AppUser;
+import com.payroll.employee_service.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -16,9 +18,11 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final UserRepository userRepo;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepo) {
         this.jwtService = jwtService;
+        this.userRepo = userRepo;
     }
 
     @Override
@@ -28,12 +32,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             try {
                 Claims c = jwtService.parse(header.substring(7));
-                Number emp = c.get("employeeId", Number.class);
-                AuthUser user = new AuthUser(c.getSubject(), c.get("role", String.class),
-                        emp == null ? null : emp.longValue());
-                var auth = new UsernamePasswordAuthenticationToken(user, null,
-                        List.of(new SimpleGrantedAuthority("ROLE_" + user.role())));
-                SecurityContextHolder.getContext().setAuthentication(auth);
+
+                // The token only proves who the user is. Whether they may still use the system
+                // is checked against the database on every request, so deactivation is immediate.
+                AppUser account = userRepo.findByEmail(c.getSubject()).orElse(null);
+                boolean allowed = account != null && account.isActive()
+                        && (account.getEmployee() == null || account.getEmployee().isActive());
+
+                if (allowed) {
+                    Long employeeId = account.getEmployee() == null ? null : account.getEmployee().getId();
+                    // Role and employee link come from the database, not from the token
+                    AuthUser user = new AuthUser(account.getEmail(), account.getRole().name(), employeeId);
+                    var auth = new UsernamePasswordAuthenticationToken(user, null,
+                            List.of(new SimpleGrantedAuthority("ROLE_" + user.role())));
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } else {
+                    SecurityContextHolder.clearContext();
+                }
             } catch (Exception e) {
                 // invalid or expired token: leave unauthenticated, the request gets a 401
                 SecurityContextHolder.clearContext();

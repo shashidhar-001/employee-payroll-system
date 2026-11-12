@@ -6,6 +6,7 @@ import com.payroll.employee_service.entity.Employee;
 import com.payroll.employee_service.repository.AttendanceRepository;
 import com.payroll.employee_service.repository.EmployeeRepository;
 import com.payroll.employee_service.security.AuthUser;
+import com.payroll.employee_service.service.HolidayService;
 import jakarta.validation.Valid;
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -35,13 +36,16 @@ public class AttendanceController {
 
   private final AttendanceRepository attendanceRepo;
   private final EmployeeRepository employeeRepo;
+  private final HolidayService holidayService;
 
   public AttendanceController(
     AttendanceRepository attendanceRepo,
-    EmployeeRepository employeeRepo
+    EmployeeRepository employeeRepo,
+    HolidayService holidayService
   ) {
     this.attendanceRepo = attendanceRepo;
     this.employeeRepo = employeeRepo;
+    this.holidayService = holidayService;
   }
 
   @PostMapping("/check-in")
@@ -57,6 +61,14 @@ public class AttendanceController {
       throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST,
         "Employee is inactive"
+      );
+    }
+
+    String off = holidayService.describe(LocalDate.now());
+    if (off != null) {
+      throw new ResponseStatusException(
+        HttpStatus.BAD_REQUEST,
+        "Today is a holiday (" + off + ")"
       );
     }
 
@@ -171,10 +183,12 @@ public class AttendanceController {
         "Cannot correct a future date"
       );
     }
-    if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+    
+    String off = holidayService.describe(date);
+    if (off != null) {
       throw new ResponseStatusException(
         HttpStatus.BAD_REQUEST,
-        "Sunday is a holiday"
+        "That day is a holiday (" + off + ")"
       );
     }
 

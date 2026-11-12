@@ -15,6 +15,7 @@ api.interceptors.response.use(
         if (err.response?.status === 401 && !err.config.url.includes('/api/auth/login')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            sessionStorage.setItem('loginNotice', 'Your session has ended. Please sign in again.');
             window.location.href = '/login';
         }
         return Promise.reject(err);
